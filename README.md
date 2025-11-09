@@ -15,6 +15,15 @@ In cybersecurity, a **honeypot** is a decoy system used to attract and trap atta
 - **Training Module:** A robust script to train the GAN, including checkpointing and progress monitoring.
 - **Password Generation Tool:** A user-friendly command-line interface (`run.py`) to generate passwords from a trained model.
 - **Performance Evaluation Tool:** A quantitative analysis script (`evaluate.py`) to measure the quality of the generated passwords based on Uniqueness, Novelty, and Strength.
+---
+
+## 🎥 Demo Video
+
+Watch the full demo of **GAN-Guard** here:  
+▶️ [Click to Watch on Google Drive](https://drive.google.com/file/d/123u5w7TCnE-tTqU2MQf3upalRfmNe5xq/view?usp=sharing)
+
+---
+
 
 ---
 
