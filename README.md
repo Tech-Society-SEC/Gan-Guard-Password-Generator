@@ -10,20 +10,19 @@ In cybersecurity, a **honeypot** is a decoy system used to attract and trap atta
 
 ## ✨ Features
 
-- **Data Pipeline:** A complete data processing pipeline to clean, tokenize, and prepare massive password datasets for training.
-- **GAN Model:** A sophisticated Generative Adversarial Network built with PyTorch, specifically designed for sequential data like text.
-- **Training Module:** A robust script to train the GAN, including checkpointing and progress monitoring.
-- **Password Generation Tool:** A user-friendly command-line interface (`run.py`) to generate passwords from a trained model.
-- **Performance Evaluation Tool:** A quantitative analysis script (`evaluate.py`) to measure the quality of the generated passwords based on Uniqueness, Novelty, and Strength.
+- **Advanced Data Curation:** A script (`curate_common.py`) to filter massive password lists, creating a focused dataset of only common, "humanlike" passwords.
+- **Flexible Data Pipeline:** A processing script (`preprocess.py`) to tokenize and convert any text-based dataset into a PyTorch-ready tensor.
+- **Stable WGAN-GP Model:** A state-of-the-art Wasserstein GAN with Gradient Penalty (`models.py`) to ensure stable training and prevent the mode collapse that simpler GANs face.
+- **WGAN-GP Training Module:** A robust script (`train_wgan.py`) to train the stable model, including checkpointing and resume-from-epoch functionality.
+- **Password Generation Tool:** A user-friendly CLI (`run.py`) to generate passwords from a trained model, with built-in filters to remove collapsed results (blanks/numbers).
+- **Performance Evaluation Tool:** A quantitative analysis script (`evaluate.py`) to measure the quality of the generated passwords based on **Uniqueness**, **Novelty**, and **Strength**.
+
 ---
 
 ## 🎥 Demo Video
 
-Watch the full demo of **GAN-Guard** here:  
+Watch the full demo of how our generated honeypot passwords plays the role here:
 ▶️ [Click to Watch on Google Drive](https://drive.google.com/file/d/123u5w7TCnE-tTqU2MQf3upalRfmNe5xq/view?usp=sharing)
-
----
-
 
 ---
 
@@ -35,21 +34,18 @@ Follow these instructions to set up and run the project locally.
 
 - Python 3.8+
 - Git
+- An NVIDIA GPU with CUDA (recommended for training)
 
 ### Installation & Setup
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/Tech-Society-SEC/Gan-guard.git](https://github.com/Tech-Society-SEC/Gan-guard.git)
-    cd Gan-guard
+    git clone [https://github.com/Tech-Society-SEC/Gan-Guard-Password-Generator.git](https://github.com/Tech-Society-SEC/Gan-Guard-Password-Generator.git)
+    cd Gan-Guard-Password-Generator
     ```
 
 2.  **Set up a Python virtual environment:**
     ```bash
-    # For Windows
-    python -m venv .venv
-    .\.venv\Scripts\Activate.ps1
-
     # For macOS/Linux
     python3 -m venv .venv
     source .venv/bin/activate
@@ -57,49 +53,92 @@ Follow these instructions to set up and run the project locally.
 
 3.  **Install the required dependencies:**
     ```bash
-    pip install torch torchvision torchaudio zxcvbn-python
+    pip install torch torchvision torchadudio zxcvbn-python
     ```
 
-### How to Run
+### How to Run (The Final "Humanlike" Model)
 
-1.  **Preprocess the Data:**
-    *(Note: You must have a `rockyou.txt` file in the project's root directory for this step).*
+This is the process to train our final, stable, "humanlike" model.
+
+1.  **Get Raw Data:**
+    * Download the `rockyou.txt` password list and place it in the project's root directory.
+
+2.  **Curate the "Common" Dataset:**
+    * Run this script to filter the 14M passwords down to a smaller, focused list of only common, humanlike passwords (scores 0-1).
     ```bash
-    python preprocess.py
+    python curate_common.py
+    ```
+    * This will create a new file: `rockyou_common_subset.txt`.
+
+3.  **Preprocess the Data:**
+    * Now, convert that new text file into a PyTorch tensor.
+    ```bash
+    python preprocess.py rockyou_common_subset.txt --output rockyou_common_subset_processed.pt
     ```
 
-2.  **Train the Model:**
+4.  **Train the WGAN-GP Model:**
+    * This is our stable, advanced trainer.
     ```bash
-    python train.py
+    python train_wgan.py
     ```
+    * This will save checkpoints (e.g., `generator_epoch_10.pth`) into the `models_wgan_common/` folder.
 
-3.  **Generate Passwords:**
-    *(Replace `generator_epoch_X.pth` with your trained model file).*
+5.  **Generate Passwords:**
+    * Use `run.py` to generate passwords from your "champion" model (e.g., Epoch 10).
     ```bash
-    python run.py generator_epoch_X.pth --num 50
+    python run.py models_wgan_common/generator_epoch_10.pth --num 50
     ```
 
 ---
+
+## 🛠️ Our 4-Stage Project Pipeline
+
+This project followed a structured, 4-stage experimental pipeline.
+
+### **Stage 1: Data Foundation & Curation**
+- **Goal:** Create a high-quality, focused dataset.
+- **Action:** We implemented `curate_common.py` to filter the 14M+ `rockyou.txt` dataset. We used `zxcvbn` to extract only the simple, "humanlike" passwords (scores 0-1), creating `rockyou_common_subset.txt`.
+- **Outcome:** A small, fast, and high-quality dataset perfectly suited for our goal.
+
+### **Stage 2: Initial Experiment & Failure Analysis**
+- **Goal:** Establish a baseline and test a simple model.
+- **Action:** We first trained a standard, simple GAN on our curated data.
+- **Outcome:** A clear and important **failure**. The model was too simple, its gradients vanished, and it completely failed to learn (Loss stuck at `0.6931`). This proved we needed a more advanced architecture.
+
+### **Stage 3: Advanced Model Development (WGAN-GP)**
+- **Goal:** Solve the stability and "vanishing gradient" problem.
+- **Action:** We replaced the simple GAN with a state-of-the-art **Wasserstein GAN with Gradient Penalty (WGAN-GP)**. This involved replacing the `Discriminator` with a `Critic` (no sigmoid) and implementing the advanced `train_wgan.py` script.
+- **Outcome:** The WGAN-GP model trained perfectly. It was **stable, did not collapse, and showed clear learning** epoch after epoch.
+
+### **Stage 4: Champion Model Selection & Application**
+- **Goal:** Find the best-performing model and prove its quality.
+- **Action:** We used `run.py` and `evaluate.py` to analyze the checkpoints from our successful WGAN training.
+- **Outcome:** We identified **Epoch 10** as our **"champion" model**. It provided the perfect balance of visual quality (e.g., `pito977`, `buest`), high Uniqueness (92.5%), and high Novelty (88.1%), successfully achieving our project's goal.
+
+---
+
+## MODEL TRAINING
+<img width="2521" height="1520" alt="image" src="https://github.com/user-attachments/assets/b5c2ec30-dca4-47e4-9b9a-7b1ccfa2a6f0" />
+
+<img width="2521" height="1520" alt="image" src="https://github.com/user-attachments/assets/7920e34a-61bc-4848-8040-403fd4bb2543" />
+
+## GENERATING PASSWORDS
+
+<img width="2521" height="1520" alt="image" src="https://github.com/user-attachments/assets/d64d0f87-6fe1-4688-8067-494a1b964df0" />
+
+
+## MODEL EVALUATION
+
+<img width="2118" height="520" alt="image" src="https://github.com/user-attachments/assets/ab6b34d8-278e-45e3-939e-270d4e7bc29d" />
+
+
 
 ## 🤝 Our Team & Contributions
 
 This project is a collaborative effort. We follow a feature-branch workflow, and all contributions are made via Pull Requests.
 
-| Team Member        | GitHub Handle | Responsibilities                               |
-| ------------------ | ------------- | ---------------------------------------------- |
-| **BARATHRAJ K** | `@KBarathraj`  | **Project Lead**, Data Pipeline, Project Structure |
-| **RISHON ANAND** | `@Rishon100`   | GAN Model Architecture (Generator & Discriminator) |
-| **LOGESH B** | `@LogeshBalaji`   | Model Training and Evaluation Scripts            |
-
-##  Sprint Log & Weekly Progress
-
-This section tracks our progress on a weekly basis, aligning with our project sprints.
-
-### **Project Foundation**
-
-- **Goal:** Establish the core components of the project.
-- **Pull Requests:**
-  - `[#1] Feature: Data Processing Pipeline` - Implemented the foundational scripts to process and prepare the dataset.
-  - `[#2] Feature: GAN Model Architecture` - Defined the core PyTorch models for the Generator and Discriminator.
-  - `[#3] Feature: Initial Training Script` - Created the main script to handle the model training loop.
-- **Outcome:** Successfully established a complete, runnable foundation for the project. All core components are in place for initial training experiments.
+| Team Member | GitHub Handle | Responsibilities |
+| :--- | :--- | :--- |
+| **BARATHRAJ K** | `@KBarathraj` | **Project Lead**, Data Pipeline, WGAN-GP Implementation |
+| **RISHON ANAND** | `@Rishon100` | GAN Model Architecture (Generator & Critic) |
+| **LOGESH B** | `@LogeshBalaji` | Data Curation & Model Evaluation Scripts |
